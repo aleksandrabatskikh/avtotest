@@ -1,0 +1,180 @@
+#include <stdio.h>
+#include <stdlib.h>
+
+int main(void) {
+    FILE *data_file;
+    int M, N, L, K;
+    FILE *res_file;
+    int **array;
+    int **original;
+    int *rows_valid;
+    int *cols_valid;
+    int current;
+    int count;
+
+    data_file = fopen("data.txt", "r");
+    if (!data_file) {
+        res_file = fopen("res.txt", "w");
+        if (res_file) {
+            fprintf(res_file, "ERROR");
+            fclose(res_file);
+        }
+        return -1;
+    }
+
+    if (fscanf(data_file, "%d %d %d %d", &M, &N, &L, &K) != 4 || M > N || L <= 0 || K <= 0) {
+        fclose(data_file);
+        res_file = fopen("res.txt", "w");
+        if (res_file) {
+            fprintf(res_file, "ERROR");
+            fclose(res_file);
+        }
+        return -1;
+    }
+
+    array = (int **)malloc(L * sizeof(int *));
+    original = (int **)malloc(L * sizeof(int *));
+    if (!array || !original) {
+        fclose(data_file); 
+        res_file = fopen("res.txt", "w");
+        if (res_file) {
+            fprintf(res_file, "ERROR");
+            fclose(res_file);
+        }
+        return -1;
+    }
+
+    for (int i = 0; i < L; i++) {
+        array[i] = (int *)malloc(K * sizeof(int));
+        original[i] = (int *)malloc(K * sizeof(int));
+        if (!array[i] || !original[i]) {
+            for (int j = 0; j < i; j++) {
+            free(array[j]);
+            free(original[j]);
+        }
+            free(array);
+            free(original);
+            fclose(data_file);
+            res_file = fopen("res.txt", "w");
+            if (res_file) {
+                fprintf(res_file, "ERROR");
+                fclose(res_file);
+            }
+            return -1;
+        }
+    }
+
+    for (int i = 0; i < L; i++) {
+        for (int j = 0; j < K; j++) {
+            if (fscanf(data_file, "%d", &array[i][j]) != 1) {
+                for (int x = 0; x < L; x++){
+                     free(array[x]);
+                     free(original[x]);
+                    }
+                free(array);
+                free(original);
+                fclose(data_file);
+                res_file = fopen("res.txt", "w");
+                if (res_file) {
+                    fprintf(res_file, "ERROR");
+                    fclose(res_file);
+                }
+                return -1;
+            }
+            original[i][j] = array[i][j];
+        }
+    }
+    fclose(data_file);
+
+    rows_valid = (int *)calloc(L, sizeof(int));
+    cols_valid = (int *)calloc(K, sizeof(int));
+    if (!rows_valid || !cols_valid) {
+        for (int i = 0; i < L; i++) {
+            free(array[i]);
+            free(original[i]);
+        }
+        free(array);
+        free(original);
+        free(rows_valid);
+        free(cols_valid);
+        res_file = fopen("res.txt", "w");
+        if (res_file) {
+            fprintf(res_file, "ERROR");
+            fclose(res_file);
+        }
+        return -1;
+    }
+
+    // Определение строк R
+    for (int i = 0; i < L; i++) {
+        for (int j = 0; j < K; j++) {
+            if (original[i][j] >= M && original[i][j] <= N) {
+                rows_valid[i] = 1;
+                break;
+            }
+        }
+    }
+
+    // Определение столбцов C
+    for (int j = 0; j < K; j++) {
+        for (int i = 0; i < L; i++) {
+            if (original[i][j] >= M && original[i][j] <= N) {
+                cols_valid[j] = 1;
+                break;
+            }
+        }
+    }
+
+    // Обработка элементов множества X
+    for (int i = 0; i < L; i++) {
+        if (!rows_valid[i]) continue;
+        for (int j = 0; j < K; j++) {
+            if (!cols_valid[j]) continue;
+            current = original[i][j];
+            count = 0;
+            
+            // Подсчет вхождений current во всех строках R
+            for (int r = 0; r < L; r++) {
+                if (!rows_valid[r]) continue;
+                for (int c = 0; c < K; c++) {
+                    if (original[r][c] == current) {
+                        count++;
+                    }
+                }
+            }
+            
+            array[i][j] = (count >= 2) ? 1 : 0;
+        }
+    }
+
+    res_file = fopen("res.txt", "w");
+    if (!res_file) {
+        for (int i = 0; i < L; i++) {
+            free(array[i]);
+            free(original[i]);
+        }
+        free(array);
+        free(original);
+        free(rows_valid);
+        free(cols_valid);
+        return -1;
+    }
+
+    fprintf(res_file, "%d %d %d %d\n", M, N, L, K);
+    for (int i = 0; i < L; i++) {
+        for (int j = 0; j < K; j++) {
+            fprintf(res_file, "%d", array[i][j]);
+            if (j < K - 1) fprintf(res_file, " ");
+        }
+        if (i < L - 1) fprintf(res_file, "\n");
+    }
+
+    fclose(res_file);
+
+    for (int i = 0; i < L; i++) free(array[i]);
+    free(array);
+    free(rows_valid);
+    free(cols_valid);
+
+    return 0;
+}
