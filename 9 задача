@@ -1,0 +1,178 @@
+#include <stdio.h>
+#include <stdlib.h>
+
+int main(void) {
+    FILE *data_file;
+    int M, N, L, K;
+    FILE *res_file;
+    int **matrix;
+    int **original;
+    int *validRows;
+    int *validCols;
+    int value;
+    int count;
+
+    data_file = fopen("data.txt", "r");
+    if (!data_file) {
+        res_file = fopen("res.txt", "w");
+        if (res_file) {
+            fprintf(res_file, "ERROR");
+            fclose(res_file);
+        }
+        return -1;
+    }
+
+    if (fscanf(data_file, "%d %d %d %d", &M, &N, &L, &K) != 4 || M > N || L <= 0 || K <= 0) {
+        fclose(data_file);
+        res_file = fopen("res.txt", "w");
+        if (res_file) {
+            fprintf(res_file, "ERROR");
+            fclose(res_file);
+        }
+        return -1;
+    }
+       matrix = (int **)malloc(L * sizeof(int *));
+    original = (int **)malloc(L * sizeof(int *));
+    if (!matrix || !original) {
+        fclose(data_file);
+        res_file = fopen("res.txt", "w");
+        if (res_file) {
+            fprintf(res_file, "ERROR");
+            fclose(res_file);
+        }
+        return -1;
+    }
+
+    for (int i = 0; i < L; i++) {
+        matrix[i] = (int *)malloc(K * sizeof(int));
+        original[i] = (int *)malloc(K * sizeof(int));
+        if (!matrix[i] || !original[i]) {
+            for (int j = 0; j < i; j++) {
+            free(matrix[j]);
+            free(original[j]);
+        }
+            free(matrix);
+            free(original);
+            fclose(data_file);
+            res_file = fopen("res.txt", "w");
+            if (res_file) {
+                fprintf(res_file, "ERROR");
+                fclose(res_file);
+            }
+            return -1;
+        }
+    }
+
+    for (int i = 0; i < L; i++) {
+        for (int j = 0; j < K; j++) {
+            if (fscanf(data_file, "%d", &matrix[i][j]) != 1) {
+                for (int x = 0; x < L; x++){
+                     free(matrix[x]);
+                     free(original[x]);
+                    }
+                free(matrix);
+                free(original);
+                fclose(data_file);
+                res_file = fopen("res.txt", "w");
+                if (res_file) {
+                    fprintf(res_file, "ERROR");
+                    fclose(res_file);
+                }
+                return -1;
+            }
+            original[i][j] = matrix[i][j];
+        }
+    }
+    fclose(data_file);
+
+    validRows = (int *)calloc(L, sizeof(int));
+    validCols = (int *)calloc(K, sizeof(int));
+    if (!validRows || !validCols) {
+        for (int i = 0; i < L; i++) {
+            free(matrix[i]);
+            free(original[i]);
+        }
+        free(matrix);
+        free(original);
+        free(validRows);
+        free(validCols);
+        res_file = fopen("res.txt", "w");
+        if (res_file) {
+            fprintf(res_file, "ERROR");
+            fclose(res_file);
+        }
+        return -1;
+    }
+    
+    // Определение строк, содержащих элементы из [M, N]
+    for (int i = 0; i < L; i++) {
+        for (int j = 0; j < K; j++) {
+            if (original[i][j] >= M && original[i][j] <= N) {
+                validRows[i] = 1;
+                break;
+            }
+        }
+    }
+    
+    // Определение столбцов, содержащих элементы из [M, N]
+    for (int j = 0; j < K; j++) {
+        for (int i = 0; i < L; i++) {
+            if (original[i][j] >= M && original[i][j] <= N) {
+                validCols[j] = 1;
+                break;
+            }
+        }
+    }
+    // Обработка элементов множества X
+    for (int i = 0; i < L; i++) {
+        for (int j = 0; j < K; j++) {
+            if (validRows[i] && validCols[j]) {
+                int value = original[i][j];
+                int count = 0;
+                
+                // Подсчёт вхождений в допустимых столбцах
+                for (int s = 0; s <= j; s++) {
+                    if (validCols[s]) {
+                        for (int k = 0; k < L; k++) {
+                            if (original[k][s] == value) {
+                                count++;
+                            }
+                        }
+                    }
+                }
+                
+                matrix[i][j] = (count >= 2) ? 1 : 0;
+            }
+        }
+    }
+   res_file = fopen("res.txt", "w");
+    if (!res_file) {
+        for (int i = 0; i < L; i++) {
+            free(matrix[i]);
+            free(original[i]);
+        }
+        free(matrix);
+        free(original);
+        free(validRows);
+        free(validCols);
+        return -1;
+    }
+
+    fprintf(res_file, "%d %d %d %d\n", M, N, L, K);
+    for (int i = 0; i < L; i++) {
+        for (int j = 0; j < K; j++) {
+            fprintf(res_file, "%d", matrix[i][j]);
+            if (j < K - 1) fprintf(res_file, " ");
+        }
+        if (i < L - 1) fprintf(res_file, "\n");
+    }
+
+    fclose(res_file);
+
+    for (int i = 0; i < L; i++) free(matrix[i]);
+    free(matrix);
+    free(validRows);
+    free(validCols );
+
+    return 0;
+}
